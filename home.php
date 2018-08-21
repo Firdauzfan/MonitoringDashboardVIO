@@ -30,12 +30,19 @@ include('config/connect.php')
 	  $Id_Pegawai=$_SESSION['id_peg'];
 	  $sql = mysqli_query($con, "SELECT * FROM users WHERE id_pegawai='$Id_Pegawai'") or die(mysqli_error());
 	  $rowe = mysqli_fetch_assoc($sql);
+
+    $sql_sum = mysqli_query($con, "SELECT SUM(jumlah_karyawan) AS tot_karyawan FROM `employee`") or die(mysqli_error());
+    $rowsum = mysqli_fetch_assoc($sql_sum);
+    
 ?>
 
   <!-- Left side column. contains the logo and sidebar -->
 <?php
 include('header.php');
 include('sidebar.php');
+?>
+<?php
+include('scriptjs.php');
 ?>
 
   <!-- Content Wrapper. Contains page content -->
@@ -60,29 +67,44 @@ include('sidebar.php');
           <!-- small box -->
           <div class="small-box bg-aqua">
             <div class="inner">
-              <h3>150</h3>
-
-              <p>New Orders</p>
+              <h3>12</h3>
+              <p>Products & Services</p>
             </div>
             <div class="icon">
               <i class="ion ion-bag"></i>
             </div>
-            <a href="#" class="small-box-footer">More info <i class="fa fa-arrow-circle-right"></i></a>
+            <a href="product.php" class="small-box-footer">More info <i class="fa fa-arrow-circle-right"></i></a>
           </div>
         </div>
+
         <!-- ./col -->
         <div class="col-lg-3 col-xs-6">
           <!-- small box -->
           <div class="small-box bg-green">
             <div class="inner">
-              <h3>53<sup style="font-size: 20px">%</sup></h3>
-
-              <p>Bounce Rate</p>
+              <h3><?php echo $rowsum['tot_karyawan']; ?></h3>
+            <p>Employees</p>
             </div>
             <div class="icon">
-              <i class="ion ion-stats-bars"></i>
+              <i class="ion ion-person-add"></i>
             </div>
             <a href="#" class="small-box-footer">More info <i class="fa fa-arrow-circle-right"></i></a>
+          </div>
+        </div>
+
+        <!-- ./col -->
+        <div class="col-lg-3 col-xs-6">
+          <!-- small box -->
+          <div class="small-box bg-red">
+            <div class="inner">
+              <h3>8</h3>
+
+              <p>Facilities</p>
+            </div>
+            <div class="icon">
+              <i class="fa fa-suitcase"></i>
+            </div>
+            <a href="facilities.php" class="small-box-footer">More info <i class="fa fa-arrow-circle-right"></i></a>
           </div>
         </div>
         <!-- ./col -->
@@ -91,21 +113,6 @@ include('sidebar.php');
           <div class="small-box bg-yellow">
             <div class="inner">
               <h3>44</h3>
-
-              <p>User Registrations</p>
-            </div>
-            <div class="icon">
-              <i class="ion ion-person-add"></i>
-            </div>
-            <a href="#" class="small-box-footer">More info <i class="fa fa-arrow-circle-right"></i></a>
-          </div>
-        </div>
-        <!-- ./col -->
-        <div class="col-lg-3 col-xs-6">
-          <!-- small box -->
-          <div class="small-box bg-red">
-            <div class="inner">
-              <h3>65</h3>
 
               <p>Unique Visitors</p>
             </div>
@@ -119,23 +126,46 @@ include('sidebar.php');
       </div>
       <!-- /.row -->
       <!-- Main row -->
+     
       <div class="row">
         <!-- Left col -->
-        <section class="col-lg-7 connectedSortable">
+        <section class="col-lg-6 connectedSortable">
           <!-- Custom tabs (Charts with tabs)-->
           <div class="nav-tabs-custom">
-            <!-- Tabs within a box -->
-            <ul class="nav nav-tabs pull-right">
-              <li class="active"><a href="#revenue-chart" data-toggle="tab">Area</a></li>
-              <li><a href="#sales-chart" data-toggle="tab">Donut</a></li>
-              <li class="pull-left header"><i class="fa fa-inbox"></i> Sales</li>
-            </ul>
-            <div class="tab-content no-padding">
-              <!-- Morris chart - Sales -->
-              <div class="chart tab-pane active" id="revenue-chart" style="position: relative; height: 300px;"></div>
-              <div class="chart tab-pane" id="sales-chart" style="position: relative; height: 300px;"></div>
-            </div>
+           <?php
+
+          $sql_sum2 = mysqli_query($con, "SELECT * FROM `employee`") or die(mysqli_error());
+
+          $dataPoints = [];
+          $json_data=array(); 
+          while($row = mysqli_fetch_array($sql_sum2))
+          {
+              $dataPoints[] = $row;
+              $json_array['label']=$row['divisi'];  
+              $json_array['value']=$row['jumlah_karyawan'];  
+              array_push($json_data,$json_array);  
+          }
+             {
+            ?>
+          <div class="box-header with-border">
+            <h3 class="box-title">Employees Chart</h3>
           </div>
+            <!-- Tabs within a box -->
+          <div id="donut-example" style="height: 300px; position: relative;"></div>
+
+          <script type="application/javascript">
+
+          Morris.Donut({
+            element: 'donut-example',
+            data: <?php echo json_encode($json_data)?>
+            });
+
+          </script>
+
+          <?php  } ?>
+          </div>
+
+          
           <!-- /.nav-tabs-custom -->
 
           <!-- Chat box -->
@@ -375,7 +405,7 @@ include('sidebar.php');
         </section>
         <!-- /.Left col -->
         <!-- right col (We are only adding the ID to make the widgets sortable)-->
-        <section class="col-lg-5 connectedSortable">
+        <section class="col-lg-6 connectedSortable">
 
           <!-- Map box -->
           <div class="box box-solid bg-light-blue-gradient">
@@ -758,8 +788,12 @@ include('sidebar.php');
 </div>
 <!-- ./wrapper -->
 
-<?php
-include('scriptjs.php');
-?>
+
+<script id="chatBroEmbedCode">
+/* Chatbro Widget Embed Code Start */
+function ChatbroLoader(chats,async){async=!1!==async;var params={embedChatsParameters:chats instanceof Array?chats:[chats],lang:navigator.language||navigator.userLanguage,needLoadCode:'undefined'==typeof Chatbro,embedParamsVersion:localStorage.embedParamsVersion,chatbroScriptVersion:localStorage.chatbroScriptVersion},xhr=new XMLHttpRequest;xhr.withCredentials=!0,xhr.onload=function(){eval(xhr.responseText)},xhr.onerror=function(){console.error('Chatbro loading error')},xhr.open('GET','//www.chatbro.com/embed.js?'+btoa(unescape(encodeURIComponent(JSON.stringify(params)))),async),xhr.send()}
+/* Chatbro Widget Embed Code End */
+ChatbroLoader({encodedChatId: '62Qjo'});
+</script>
 </body>
 </html>
