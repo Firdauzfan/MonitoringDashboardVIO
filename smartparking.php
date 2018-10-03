@@ -25,38 +25,8 @@ if (!isset($_SESSION['ID'])){
   <!-- Tell the browser to be responsive to screen width -->
   <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
 
-  <script type="text/javascript" src="dist/js/vxgplayer-1.8.23.min.js"></script>
-  <link href="dist/css/vxgplayer-1.8.23.min.css" rel="stylesheet"/>
-  <style type="text/css">
-  iframe 
-  {
-   display: block; 
-   width: 100%; 
-   border: none; 
-   overflow-y: auto; 
-   overflow-x: hidden;
-  }
-  .content-absolute{
-    top: 0px;
-    padding: 0px;
-    margin: 0px;
-    height: 100%;
-  }
-
-  .content{
-    width: 100% !important;
-    height: 100%;
-    padding: 0px;
-    top: -25px;
-    text-align: center;
-  }
-
-  h1 {
-    padding-top: 25px;
-    border-bottom: 1px solid #e5e4e4;
-    color: #747474;
-  }
-  </style>
+  <script src="bower_components/jquery/dist/jquery.js"></script>
+ 
 <?php
 include('scriptcss.php')
 ?>
@@ -66,7 +36,7 @@ include('scriptcss.php')
 <div class="wrapper">
 <?php 
 
-include('config/connect.php')
+include('config/connect.php');
 ?>
 <?php
 	  $Id_Pegawai=$_SESSION['id_peg'];
@@ -88,40 +58,113 @@ include('sidebar.php');
     <section class="content">
 
     <div class="content-absolute">
-          <?php
-          $id = $_GET['cam'];
 
-          if ($id==0) {
-              $sql = "SELECT * FROM camera";
+            <table class="table table-striped table-bordered">
+                  <thead>
+                    <tr>
+                      <th>No</th>
+                      <th>Nama Pengguna</th>
+                      <th>NIP</th>
+                      <th>Unit</th>
+                      <th>Plat Nomor</th>
+                      <th>Waktu Datang</th>
+                      <th>Waktu Pergi</th>
+                      <th>Gambar Kedatangan</th>
+                      <th>Gambar Kepergian</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                  <div id="pageone" data-role="main" class="ui-content">
+                  <?php
+                   include ('config/smartparkdb.php');
 
-              $query = $con->query($sql);
-              echo "<h1>Live Streaming CCTV PT VIO Intelligence</h1>";
+                   if (isset($_GET['pageno'])) {
+                        $pageno = $_GET['pageno'];
+                    } else {
+                        $pageno = 1;
+                    }
+                   $no_of_records_per_page = 10;
+                   $offset = ($pageno-1) * $no_of_records_per_page;
+                   $total_pages_sql = "SELECT COUNT(*) FROM track_plat";
+                   $result = $conalpr->query($total_pages_sql); 
+                   $total_rows = mysqli_fetch_array($result)[0];
+                   $total_pages = ceil($total_rows / $no_of_records_per_page);
 
-                while($row = $query->fetch_assoc()){
-                  
-                    echo '
-                        <div id="vxg_media_player'.$row['id_camera'].'" class="vxgplayer" width="500" height="300" url="'.$row['rtsp_camera'].'" aspect-ratio latency="3000000" autostart controls avsync debug></div>
-                    ';
-                }
-          }else{
-              $sql = "SELECT * FROM camera WHERE id_camera=$id";
+                   $sqlalpr = "SELECT pengguna.id_pengguna, pengguna.nama_pengguna, pengguna.nip, pengguna.unit,plat_nomor.text_plat,track_plat.waktu_datang,track_plat.waktu_pergi FROM pengguna,plat_nomor,track_plat WHERE pengguna.id_pengguna=plat_nomor.kepunyaan AND DATE(track_plat.waktu_datang) = DATE(CURDATE()) AND track_plat.plat_no=plat_nomor.text_plat ORDER BY pengguna.id_pengguna DESC LIMIT $offset, $no_of_records_per_page";          
 
-              $query = $con->query($sql);
+                   $query = $conalpr->query($sqlalpr);         
+                   
+                   // $time=date("Y-m-d");
+                   // echo $time;
+                   
+                   $no=1;
+                   $noe=1;
+                   while ($row = $query->fetch_assoc()) {
+                            echo '<tr>';
+                            echo '<td>'. $noe++ . '</td>';
+                            echo '<td>'. $row['nama_pengguna'] . '</td>';
+                            echo '<td>'. $row['nip'] . '</td>';
+                            echo '<td>'. $row['unit'] . '</td>';
+                            echo '<td>'. $row['text_plat'] . '</td>';
+                            echo '<td>'. $row['waktu_datang'] . '</td>';
+                            echo '<td>'. $row['waktu_pergi'] . '</td>';
+                            echo '<td width=250>';                          
+                            echo '<img style="width:50%;height:10%" id="'.$no++.'" data-toggle="modal" data-target="#myModal" src="hasil_parksystem/'. $row['text_plat'] . ''. str_replace(' ', '', $row['waktu_datang']) . '.png" alt="'. $row['text_plat'] . '" />';
+                            echo '</td>';
+                            echo '<td width=250>';                          
+                            echo '<img style="width:50%;height:10%" id="'.$no++.'" data-toggle="modal" data-target="#myModal" src="hasil_parksystem/'. $row['text_plat'] . ''. str_replace(' ', '', $row['waktu_pergi']) . '.png" alt="'. $row['text_plat'] . '" />';
+                            echo '</td>';
+                            echo '</tr>';
 
-                while($row = $query->fetch_assoc()){
-                    echo "<h1>Live Streaming ".$row['nama_camera']." PT VIO Intelligence</h1>";
-                  
-                    echo '
-                        <div id="vxg_media_player'.$row['id_camera'].'" class="vxgplayer" width="1300" height="650" url="'.$row['rtsp_camera'].'" aspect-ratio latency="3000000" autostart controls avsync debug></div>
-                    ';
-                }
-          }
-          
-          ?>
+                   }
 
+                  ?>
+
+                  </tbody>
+            </table>
+                  <ul class="pagination">
+                      <li><a href="?pageno=1">First</a></li>
+                      <li class="<?php if($pageno <= 1){ echo 'disabled'; } ?>">
+                          <a href="<?php if($pageno <= 1){ echo '#'; } else { echo "?pageno=".($pageno - 1); } ?>">Prev</a>
+                      </li>
+                      <?php
+                      for($i = 1; $i<=$total_pages; $i++)
+                      {
+                          $pageLink = "?pageno=$i";
+                          print("<li><a href=$pageLink>$i</a></li>");
+                      }
+
+                      ?>
+                      <li class="<?php if($pageno >= $total_pages){ echo 'disabled'; } ?>">
+                          <a href="<?php if($pageno >= $total_pages){ echo '#'; } else { echo "?pageno=".($pageno + 1); } ?>">Next</a>
+                      </li>
+                      <li><a href="?pageno=<?php echo $total_pages; ?>">Last</a></li>
+                  </ul>
       </div>
-       
-    <script type="text/javascript"></script>
+      <!-- <img height="100" width="80" id="1" data-toggle="modal" data-target="#myModal" src='http://tympanus.net/Tutorials/CaptionHoverEffects/images/1.png' alt='Text dollar code part one.' />
+      <img height="100" width="80" id="2" data-toggle="modal" data-target="#myModal" src='http://tympanus.net/Tutorials/CaptionHoverEffects/images/2.png' alt='Text dollar code part one.' /> -->
+      <div id="myModal" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <img class="img-responsive" src="" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+      </div>
+
+      <script>
+      // Get the modal
+      jQuery(document).ready(function () {
+        jQuery('#myModal').on('show.bs.modal', function (e) {
+            var image = jQuery(e.relatedTarget).attr('src');
+            jQuery(".img-responsive").attr("src", image);
+        });
+      });
+      </script>
 
     </section>
     <!-- /.content -->
